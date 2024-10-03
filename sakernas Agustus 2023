@@ -1,0 +1,80 @@
+***************************
+****SAKERNAS AGUSTUS 2022***
+****ACHMAD BUDI SETYAWAN****
+**********Maret 2023*****************
+**# Bookmark #1
+
+clear
+capture log close
+set more off
+
+global sakernas    "E:\sakernas\analisis\Data"
+global log_files	"E:\sakernas\analisis\Log Files"
+global created		"E:\sakernas\analisis\Created Data"
+log using 	"$log_files\formality23.log", replace
+global output "E:\sakernas\analisis\Output"
+**# Bookmark #2
+
+use "$sakernas\sak08_23", clear
+*keep if kode_prov==32   ****untuk memilih provinsi**
+rename weightr weight
+ren rowindex urutan
+gen uk=0 /***Penduduk usia kerja adalah penduduk berumur 15 tahun dan lebih***/
+replace uk=1 if k9>=15
+**# Bookmark #3
+*********************************************************
+****DATA STATISTIK UNTUK MENGECEK VALIDITAS DATASET******
+*********************************************************
+***ORANG BEKERJA*****
+gen bekerja=1 if r9a==1 | r9b==1 |r9c==1 |r10==1
+****PENGANGGURAN***
+gen pengangguran=1 if (r31a==1 | r31b==1 |r35a==1 | r35a==2 | r35a==3)& bekerja!=1
+****ANGKATAN KERJA/WORKFORCE***
+gen angkkerja=1 if bekerja==1 | pengangguran==1
+***BUKAN ANGKATAN KERJA***
+gen bukan_ak=1 if angkkerja!=1  /*bukan angkatan kerja*/
+
+gen wilayah=0
+replace wilayah = 1 if inrange(kode_prov,11,21)
+replace wilayah = 2 if inrange(kode_prov,31,36)
+replace wilayah = 3 if kode_prov==51
+replace wilayah = 4 if inrange(kode_prov,52,53)
+replace wilayah = 5 if inrange(kode_prov,61,65)
+replace wilayah = 6 if inrange(kode_prov,71,76)
+replace wilayah = 7 if inrange(kode_prov,81,82)
+replace wilayah = 8 if inrange(kode_prov,91,94)
+
+
+label define pulau 1 "Sumatera" ///
+2 "Jawa" ///
+3 "Bali" ///
+4. "Nusra" ///
+5 "Kalimantan" ///
+6 "Sulawesi" ///
+7 "Maluku" ///
+8 "Papua" ///
+
+
+label variable pengangguran "Pengangguran" 
+
+
+
+label values wilayah pulau 
+
+table wilayah [w=round(weight)], stat(sum bekerja) stat(sum pengangguran)
+collect export "$output\pengangguran.xls", as(xls) sheet(Sheet1) cell(A1) replace
+
+
+
+****Part Time Employment/Pekerja Tidak Penuh***** pekerja yang bekerja dibawah 25 jam per minggu
+gen parttime=0
+replace parttime=1 if r18a_blt<35 & r28b_blt<35 & r10!=1
+
+tab parttime [w=round(weight)]
+table wilayah [w=round(weight)], stat(sum bekerja) stat(sum parttime) stat(sum pengangguran) 
+collect export "$output\pengangguran.xls", as(xls) sheet(parttime) cell(A1) modify
+
+
+
+
+
